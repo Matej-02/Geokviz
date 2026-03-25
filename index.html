@@ -3,9 +3,15 @@
 <head>
   <meta charset="UTF-8">
   <title>Geo Quiz Evropa</title>
+
+  <!-- PRAVILNI CSS IMPORT - mora biti vedno v <link> -->
   https://unpkg.com/leaflet/dist/leaflet.css
+
   <style>
-    #map { height: 100vh; }
+    #map {
+      height: 100vh;
+      width: 100vw;
+    }
     #scoreBox {
       position: absolute;
       top: 10px;
@@ -19,16 +25,21 @@
     }
   </style>
 </head>
+
 <body>
+
   <div id="map"></div>
+
   <div id="scoreBox">
     <b>Napredek:</b> <span id="count">0</span> / 10<br>
     <b>Skupna razdalja:</b> <span id="total">0</span> km<br>
     <b>Najboljši rezultat:</b> <span id="best">–</span> km
   </div>
 
+  <!-- PRAVILNI JS IMPORTI -->
   https://unpkg.com/leaflet/dist/leaflet.js</script>
   https://cdn.jsdelivr.net/npm/@turf/turf@6/turf.min.js</script>
   script.js</script>
+
 </body>
 </html>
