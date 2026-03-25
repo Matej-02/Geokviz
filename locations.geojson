@@ -1,0 +1,24 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Livanjsko polje",
+        "info": "Največje kraško polje v Bosni in Hercegovini."
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [16.93, 43.80],
+            [17.05, 43.80],
+            [17.05, 43.87],
+            [16.93, 43.87],
+            [16.93, 43.80]
+          ]
+        ]
+      }
+    }
+  ]
+}
