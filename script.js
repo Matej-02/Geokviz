@@ -9,10 +9,10 @@ let totalDistance = 0;
 let guessLatLng = null;
 let guessMarker = null;
 
+let polyLayer, nearestMarker, line;
+
 let bestScore = parseInt(localStorage.getItem("bestScore"));
 if(bestScore) document.getElementById("best").textContent = bestScore;
-
-let polyLayer, nearestMarker, line;
 
 // NALOŽI GEOJSON
 fetch("locations.geojson")
@@ -27,7 +27,7 @@ map.on("click", function(e){
   guessMarker = L.marker(e.latlng).addTo(map);
 });
 
-// poslušalci
+// poslušalci gumbov
 document.getElementById("confirmBtn").addEventListener("click", confirmGuess);
 
 document.getElementById("nextBtn").addEventListener("click", ()=>{
@@ -65,7 +65,7 @@ function confirmGuess(){
     let nearest = turf.nearestPointOnLine(boundary, userPoint, {units:"kilometers"});
     let nearestPoint = turf.point(nearest.geometry.coordinates);
     km = Math.round(turf.distance(userPoint, nearestPoint, {units:"kilometers"}));
-    
+
     // prikaži na zemljevidu
     nearestMarker = L.circleMarker([nearest.geometry.coordinates[1], nearest.geometry.coordinates[0]],{radius:6}).addTo(map);
     line = L.polyline([guessLatLng,[nearest.geometry.coordinates[1], nearest.geometry.coordinates[0]]]).addTo(map);
