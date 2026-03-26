@@ -64,7 +64,7 @@ button { margin-top:5px; width:100%; }
 
 <div id="scoreBox">
   <div id="task">Izberi filtre in začni igro</div>
-  <div>Napredek: <span id="count">0</span>/10</div>
+  <div>Napredek: <span id="count">0</span>/<span id="totalRounds">10</span></div>
   <div>Skupaj: <span id="total">0</span> km</div>
   <div>Best: <span id="best">–</span> km</div>
   <button id="confirmBtn">Potrdi lokacijo</button>
@@ -79,16 +79,26 @@ button { margin-top:5px; width:100%; }
 <div id="filterBox">
   <h4>Filtriraj elemente</h4>
   <strong>Vrsta:</strong>
-  <label><input type="checkbox" class="typeFilter" value="mesto"> Mesta</label>
-  <label><input type="checkbox" class="typeFilter" value="glavno_mesto"> Glavna mesta</label>
-  <label><input type="checkbox" class="typeFilter" value="gorovje"> Gorovja</label>
-  <label><input type="checkbox" class="typeFilter" value="kotlina"> Kotliny</label>
-  <label><input type="checkbox" class="typeFilter" value="reka"> Reke</label>
-  <label><input type="checkbox" class="typeFilter" value="jezero"> Jezera</label>
+  <select id="typeFilter" multiple size="6">
+    <option value="mesto">Mesta</option>
+    <option value="glavno_mesto">Glavna mesta</option>
+    <option value="gorovje">Gorovja</option>
+    <option value="kotlina">Kotliny</option>
+    <option value="reka">Reke</option>
+    <option value="jezero">Jezera</option>
+  </select>
 
   <strong>Države:</strong>
   <select id="countryFilter" multiple size="6">
     <!-- seznam držav bo dodan preko JS -->
+  </select>
+
+  <strong>Število rund:</strong>
+  <select id="roundCountSelect">
+    <option value="10" selected>10</option>
+    <option value="20">20</option>
+    <option value="30">30</option>
+    <option value="50">50</option>
   </select>
 
   <button id="startBtn" style="margin-top:5px;">Začni igro</button>
@@ -109,6 +119,7 @@ let features = [];
 let filteredFeatures = [];
 let currentFeature;
 let roundCount = 0;
+let totalRounds = 10;
 let totalDistance = 0;
 let guessLatLng = null;
 let guessMarker = null;
@@ -128,7 +139,7 @@ fetch("locations.geojson")
   })
   .catch(err=>{ alert("GeoJSON ni naložen"); console.error(err); });
 
-// Funkcija za napolnitev selecta z državami
+// Napolni select z državami
 function populateCountrySelect(){
   let countries = new Set();
   features.forEach(f => {
@@ -152,11 +163,16 @@ map.on("click", function(e){
   guessMarker = L.marker(e.latlng).addTo(map);
 });
 
-// START IGRE gumb
+// START IGRE
 document.getElementById("startBtn").addEventListener("click", () => {
-  const selectedTypes = Array.from(document.querySelectorAll(".typeFilter:checked")).map(el=>el.value);
+  const typeSelect = document.getElementById("typeFilter");
+  const selectedTypes = Array.from(typeSelect.selectedOptions).map(opt=>opt.value);
+
   const select = document.getElementById("countryFilter");
   const selectedCountries = Array.from(select.selectedOptions).map(opt=>opt.value);
+
+  totalRounds = parseInt(document.getElementById("roundCountSelect").value);
+  document.getElementById("totalRounds").textContent = totalRounds;
 
   filteredFeatures = features.filter(f => {
     let typeMatch = selectedTypes.length===0 || 
@@ -172,6 +188,10 @@ document.getElementById("startBtn").addEventListener("click", () => {
     return;
   }
 
+  if(totalRounds > filteredFeatures.length){
+    alert(`Število rund (${totalRounds}) je večje od števila elementov (${filteredFeatures.length}). Elementi se bodo ponavljali.`);
+  }
+
   document.getElementById("filterBox").style.display="none";
   roundCount = 0;
   totalDistance = 0;
@@ -180,7 +200,6 @@ document.getElementById("startBtn").addEventListener("click", () => {
   startRound();
 });
 
-// Gumbi za potrditev in naprej
 document.getElementById("confirmBtn").addEventListener("click", confirmGuess);
 document.getElementById("nextBtn").addEventListener("click", ()=>{
   closeModal();
@@ -188,9 +207,10 @@ document.getElementById("nextBtn").addEventListener("click", ()=>{
 });
 
 function startRound(){
-  if(roundCount>=10) return endGame();
+  if(roundCount>=totalRounds) return endGame();
   guessLatLng=null;
   if(guessMarker){ map.removeLayer(guessMarker); guessMarker=null; }
+
   currentFeature = filteredFeatures[Math.floor(Math.random()*filteredFeatures.length)];
   document.getElementById("task").textContent = "Najdi: " + currentFeature.properties.name;
 }
