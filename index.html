@@ -2,52 +2,114 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>GeoKviz</title>
-
+<title>Geo Quiz Evropa</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
-
 <style>
-body { margin:0; }
-#map { height:100vh; width:100vw; }
-
-#scoreBox {
-  position:absolute;
-  top:10px;
-  left:10px;
-  background:white;
-  padding:10px;
-  border-radius:8px;
-  z-index:1000;
-  font-size:14px;
-  box-shadow:0 0 10px rgba(0,0,0,0.3);
-}
-
-#task {
-  font-weight:bold;
-  margin-bottom:5px;
-}
-
-button {
-  margin-top:5px;
-  width:100%;
-}
+  #map { height: 100vh; width: 100vw; }
+  #scoreBox {
+    position: absolute;
+    top: 10px; left: 10px;
+    background: white;
+    padding: 10px;
+    border-radius: 6px;
+    box-shadow: 0 0 10px rgba(0,0,0,0.3);
+    font-size: 14px;
+    z-index: 1000;
+  }
 </style>
 </head>
-
 <body>
+
 <div id="map"></div>
 
 <div id="scoreBox">
-  <div id="task">Loading...</div>
-  <div>Napredek: <span id="count">0</span>/10</div>
-  <div>Skupaj: <span id="total">0</span> km</div>
-  <div>Best: <span id="best">–</span> km</div>
-  <button id="confirmBtn">Potrdi lokacijo</button>
+  <b>Napredek:</b> <span id="count">0</span> / 10<br>
+  <b>Skupna razdalja:</b> <span id="total">0</span> km<br>
+  <b>Najboljši rezultat:</b> <span id="best">–</span> km
 </div>
 
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@turf/turf@6/turf.min.js"></script>
-<script src="script.js"></script>
+
+<script>
+let map = L.map('map').setView([54, 15], 4);
+L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '' }).addTo(map);
+
+let features = [];
+let currentFeature = null;
+let roundCount = 0;
+let totalDistance = 0;
+let bestScore = localStorage.getItem("bestScore");
+
+if (bestScore !== null) {
+  document.getElementById("best").textContent = bestScore;
+}
+
+// Naloži GeoJSON z vsemi geografskimi enotami
+fetch("locations.geojson")
+  .then(res => res.json())
+  .then(data => {
+    features = data.features;
+    if(features.length === 0) alert("GeoJSON nima enot!");
+    startRound();
+  })
+  .catch(err => alert("Napaka pri nalaganju GeoJSON: "+err));
+
+function startRound() {
+  if (roundCount === 10) { endGame(); return; }
+
+  // naključna izbira iz vseh features
+  currentFeature = features[Math.floor(Math.random() * features.length)];
+  alert("Najdi: " + currentFeature.properties.name);
+
+  // poslušalec klika
+  map.once("click", onMapClick);
+}
+
+function onMapClick(e) {
+  let userPoint = turf.point([e.latlng.lng, e.latlng.lat]);
+  let polygon = currentFeature.geometry;
+
+  let distKm = turf.pointToPolygonDistance(userPoint, polygon, { units: "kilometers" });
+  let km = Math.round(distKm);
+
+  totalDistance += km;
+  roundCount++;
+  document.getElementById("count").textContent = roundCount;
+  document.getElementById("total").textContent = totalDistance;
+
+  let layer = L.geoJSON(currentFeature, { style: { color: "red", weight: 2 } }).addTo(map);
+
+  let center = turf.center(currentFeature).geometry.coordinates;
+  L.popup()
+    .setLatLng([center[1], center[0]])
+    .setContent("<b>" + currentFeature.properties.name + "</b><br>" +
+                "Zgrešil si: <b>" + km + " km</b><br><br>" +
+                currentFeature.properties.info)
+    .openOn(map);
+
+  setTimeout(() => {
+    map.removeLayer(layer);
+    startRound();
+  }, 2000);
+}
+
+function endGame() {
+  alert("KONEC IGRE!\nSkupna razdalja: " + totalDistance + " km");
+  if (bestScore === null || totalDistance < bestScore) {
+    localStorage.setItem("bestScore", totalDistance);
+    document.getElementById("best").textContent = totalDistance;
+    alert("NOVO OSEBNI REKORD!");
+  }
+
+  if (confirm("Igraj znova?")) {
+    roundCount = 0; totalDistance = 0;
+    document.getElementById("count").textContent = 0;
+    document.getElementById("total").textContent = 0;
+    startRound();
+  }
+}
+</script>
+
 </body>
 </html>
