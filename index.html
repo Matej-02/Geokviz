@@ -6,7 +6,6 @@
 <title>GeoKviz</title>
 
 <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
-
 <style>
 body { margin:0; }
 #map { height:100vh; width:100vw; }
@@ -23,31 +22,23 @@ body { margin:0; }
   box-shadow:0 0 10px rgba(0,0,0,0.3);
 }
 
-#task {
-  font-weight:bold;
-  margin-bottom:5px;
-}
+#task { font-weight:bold; margin-bottom:5px; }
+button { margin-top:5px; width:100%; }
 
-button {
-  margin-top:5px;
-  width:100%;
-}
-
-/* STIL ZA MODAL INFO OKNO */
-#infoBox {
+/* Modal */
+#infoModal {
   display:none;
-  position:absolute;
-  top:50%;
-  left:50%;
-  transform:translate(-50%,-50%);
+  position: absolute;
+  top:50%; left:50%;
+  transform: translate(-50%, -50%);
   background:white;
-  padding:15px;
+  padding:20px;
   border-radius:8px;
   z-index:2000;
-  box-shadow:0 0 15px rgba(0,0,0,0.5);
+  box-shadow:0 0 20px rgba(0,0,0,0.5);
+  width: 300px;
 }
-#infoTitle { font-weight:bold; margin-bottom:5px; }
-#infoText { margin-bottom:10px; white-space:pre-line; } /* da \n deluje */
+#infoModal h3 { margin-top:0; }
 </style>
 </head>
 
@@ -62,15 +53,126 @@ button {
   <button id="confirmBtn">Potrdi lokacijo</button>
 </div>
 
-<!-- MODAL OKNO Z INFORMACIJAMI -->
-<div id="infoBox">
-  <div id="infoTitle"></div>
-  <div id="infoText"></div>
+<div id="infoModal">
+  <h3 id="modalName"></h3>
+  <p id="modalInfo"></p>
   <button id="nextBtn">Naprej</button>
 </div>
 
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@turf/turf@6/turf.min.js"></script>
-<script src="script.js"></script>
+<script>
+let map = L.map('map').setView([46,15],6);
+
+// Minimalna karta brez napisov
+L.tileLayer('https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}{r}.png', {
+  attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a>',
+  subdomains: 'abcd',
+  maxZoom: 19
+}).addTo(map);
+
+let features = [];
+let currentFeature;
+let roundCount = 0;
+let totalDistance = 0;
+let guessLatLng = null;
+let guessMarker = null;
+let bestScore = localStorage.getItem("bestScore");
+
+if(bestScore) document.getElementById("best").textContent = bestScore;
+
+// Naloži GeoJSON
+fetch("locations.geojson")
+  .then(r => r.json())
+  .then(data => { features = data.features; startRound(); })
+  .catch(err=>{ alert("GeoJSON ni naložen"); console.error(err); });
+
+// Klik na mapo
+map.on("click", function(e){
+  guessLatLng = e.latlng;
+  if(guessMarker) map.removeLayer(guessMarker);
+  guessMarker = L.marker(e.latlng).addTo(map);
+});
+
+document.getElementById("confirmBtn").addEventListener("click", confirmGuess);
+document.getElementById("nextBtn").addEventListener("click", ()=>{ closeModal(); startRound(); });
+
+function startRound(){
+  if(roundCount>=10) return endGame();
+  guessLatLng=null;
+  if(guessMarker){ map.removeLayer(guessMarker); guessMarker=null; }
+  currentFeature = features[Math.floor(Math.random()*features.length)];
+  document.getElementById("task").textContent = "Najdi: " + currentFeature.properties.name;
+}
+
+function confirmGuess(){
+  if(!guessLatLng){ alert("Najprej klikni na zemljevid!"); return; }
+
+  let userPoint = turf.point([guessLatLng.lng, guessLatLng.lat]);
+  let geometry = currentFeature.geometry;
+  let km = 0;
+
+  if(geometry.type==="Polygon"){
+    let poly = turf.polygon(geometry.coordinates);
+    if(turf.booleanPointInPolygon(userPoint, poly)){
+      km = 0;
+    } else {
+      let nearest = turf.nearestPointOnLine(turf.polygonToLine(poly), userPoint, {units:"kilometers"});
+      km = Math.round(nearest.properties.dist);
+    }
+  } else if(geometry.type==="Point"){
+    let pt = turf.point(geometry.coordinates);
+    km = Math.round(turf.distance(userPoint, pt, {units:"kilometers"}));
+  } else if(geometry.type==="LineString"){
+    let line = turf.lineString(geometry.coordinates);
+    let nearest = turf.nearestPointOnLine(line, userPoint, {units:"kilometers"});
+    km = Math.round(nearest.properties.dist);
+  }
+
+  totalDistance += km;
+  roundCount++;
+  document.getElementById("count").textContent = roundCount;
+  document.getElementById("total").textContent = totalDistance;
+
+  // Prikaži modal z info
+  showModal(currentFeature);
+
+  // Prikaz poligona/linije/točke
+  let displayLayer;
+  if(geometry.type==="Polygon") displayLayer = L.polygon(geometry.coordinates[0].map(c=>[c[1],c[0]]), {color:"red"}).addTo(map);
+  else if(geometry.type==="Point") displayLayer = L.marker([geometry.coordinates[1],geometry.coordinates[0]]).addTo(map);
+  else if(geometry.type==="LineString") displayLayer = L.polyline(geometry.coordinates.map(c=>[c[1],c[0]]), {color:"red"}).addTo(map);
+
+  if(guessMarker){ map.removeLayer(guessMarker); guessMarker=null; }
+  // Odstrani layer šele po kliku "Naprej"
+  window.currentDisplayLayer = displayLayer;
+}
+
+function showModal(feature){
+  document.getElementById("modalName").textContent = feature.properties.name;
+  document.getElementById("modalInfo").textContent = feature.properties.info || "Brez dodatnih informacij";
+  document.getElementById("infoModal").style.display = "block";
+}
+
+function closeModal(){
+  document.getElementById("infoModal").style.display = "none";
+  if(window.currentDisplayLayer){ map.removeLayer(window.currentDisplayLayer); window.currentDisplayLayer=null; }
+}
+
+function endGame(){
+  alert("Konec! Skupaj: "+totalDistance+" km");
+  if(!bestScore || totalDistance<bestScore){
+    localStorage.setItem("bestScore", totalDistance);
+    document.getElementById("best").textContent = totalDistance;
+    alert("Nov rekord!");
+  }
+  if(confirm("Ponovi igro?")){
+    roundCount=0; totalDistance=0;
+    document.getElementById("count").textContent=0;
+    document.getElementById("total").textContent=0;
+    startRound();
+  }
+}
+</script>
 </body>
 </html>
