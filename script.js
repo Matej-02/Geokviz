@@ -8,9 +8,11 @@ let features = [];
 let currentFeature = null;
 let roundCount = 0;
 let totalDistance = 0;
-let bestScore = localStorage.getItem("bestScore");
+let clickEnabled = true;
 
+let bestScore = localStorage.getItem("bestScore");
 if (bestScore !== null) {
+  bestScore = Number(bestScore);
   document.getElementById("best").textContent = bestScore;
 }
 
@@ -27,35 +29,61 @@ function startRound() {
     return;
   }
 
+  clickEnabled = true;
+
   currentFeature = features[Math.floor(Math.random() * features.length)];
+
   alert("Najdi: " + currentFeature.properties.name);
 
   map.once("click", onMapClick);
 }
 
 function onMapClick(e) {
-  let userPoint = turf.point([e.latlng.lng, e.latlng.lat]);
-  let polygon = currentFeature.geometry;
+  if (!clickEnabled) return;
+  clickEnabled = false;
 
-  let distKm = turf.pointToPolygonDistance(userPoint, polygon, {
+  let userPoint = turf.point([e.latlng.lng, e.latlng.lat]);
+
+  // Pretvori poligon v rob (line)
+  let boundary = turf.polygonToLine(currentFeature);
+
+  // Najbližja točka na robu
+  let nearest = turf.nearestPointOnLine(boundary, userPoint, {
     units: "kilometers"
   });
 
+  let distKm = nearest.properties.dist;
   let km = Math.round(distKm);
+
   totalDistance += km;
   roundCount++;
 
   document.getElementById("count").textContent = roundCount;
   document.getElementById("total").textContent = totalDistance;
 
+  // Prikaži poligon
   let layer = L.geoJSON(currentFeature, {
     style: { color: "red", weight: 2 }
   }).addTo(map);
 
-  let center = turf.center(currentFeature).geometry.coordinates;
+  // Marker uporabnika
+  let userMarker = L.marker(e.latlng).addTo(map);
 
+  // Marker najbližje točke
+  let nearestCoords = nearest.geometry.coordinates;
+  let nearestMarker = L.circleMarker([nearestCoords[1], nearestCoords[0]], {
+    radius: 6
+  }).addTo(map);
+
+  // Linija med točkama
+  let line = L.polyline([
+    e.latlng,
+    [nearestCoords[1], nearestCoords[0]]
+  ]).addTo(map);
+
+  // Popup
   L.popup()
-    .setLatLng([center[1], center[0]])
+    .setLatLng(e.latlng)
     .setContent(
       "<b>" + currentFeature.properties.name + "</b><br>" +
       "Zgrešil si: <b>" + km + " km</b><br><br>" +
@@ -65,8 +93,11 @@ function onMapClick(e) {
 
   setTimeout(() => {
     map.removeLayer(layer);
+    map.removeLayer(userMarker);
+    map.removeLayer(nearestMarker);
+    map.removeLayer(line);
     startRound();
-  }, 2000);
+  }, 2500);
 }
 
 function endGame() {
