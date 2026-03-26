@@ -2,16 +2,23 @@
 <html>
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
   <title>Geo Quiz Evropa</title>
 
-  <!-- PRAVILNI LEAFLET CSS -->
+  <!-- Leaflet CSS -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
 
   <style>
+    body {
+      margin: 0;
+    }
+
     #map {
       height: 100vh;
       width: 100vw;
     }
+
     #scoreBox {
       position: absolute;
       top: 10px;
@@ -22,6 +29,8 @@
       box-shadow: 0 0 10px rgba(0,0,0,0.3);
       font-size: 14px;
       z-index: 1000;
+
+      /* KLJUČNO za telefon */
       pointer-events: none;
     }
   </style>
@@ -29,18 +38,22 @@
 
 <body>
 
-  <div id="map"></div>
+<div id="map"></div>
 
-  <div id="scoreBox">
-    <b>Napredek:</b> <span id="count">0</span> / 10<br>
-    <b>Skupna razdalja:</b> <span id="total">0</span> km<br>
-    <b>Najboljši rezultat:</b> <span id="best">–</span> km
-  </div>
+<div id="scoreBox">
+  <b>Napredek:</b> <span id="count">0</span> / 10<br>
+  <b>Skupna razdalja:</b> <span id="total">0</span> km<br>
+  <b>Najboljši rezultat:</b> <span id="best">–</span> km
+</div>
 
-  <!-- PRAVILNI JS IMPORTI -->
-  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@turf/turf@6/turf.min.js"></script>
-  <script src="script.js"></script>
+<!-- Leaflet -->
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+
+<!-- Turf -->
+<script src="https://cdn.jsdelivr.net/npm/@turf/turf@6/turf.min.js"></script>
+
+<!-- Tvoj script -->
+<script src="script.js"></script>
 
 </body>
 </html>
