@@ -22,7 +22,14 @@ body { margin:0; }
   font-size:14px;
   box-shadow:0 0 10px rgba(0,0,0,0.3);
 }
-
+  
+<div id="infoBox" style="display:none; position:absolute; top:50%; left:50%; transform:translate(-50%,-50%);
+     background:white; padding:15px; border-radius:8px; z-index:2000; box-shadow:0 0 15px rgba(0,0,0,0.5);">
+  <div id="infoTitle" style="font-weight:bold; margin-bottom:5px;"></div>
+  <div id="infoText" style="margin-bottom:10px;"></div>
+  <button id="nextBtn">Naprej</button>
+</div>
+  
 #task {
   font-weight:bold;
   margin-bottom:5px;
