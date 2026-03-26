@@ -80,6 +80,7 @@ let guessMarker = null;
 let bestScore = localStorage.getItem("bestScore");
 let currentDisplayLayer = null;
 let currentLine = null;
+let currentBufferLayer = null;
 
 if(bestScore) document.getElementById("best").textContent = bestScore;
 
@@ -114,26 +115,51 @@ function confirmGuess(){
   let geometry = currentFeature.geometry;
   let km = 0;
   let nearestCoords = null;
+  let bufferLayer = null; // za vizualni buffer
 
   if(geometry.type==="Polygon"){
+    // Poligoni ostanejo brez bufferja
     let poly = turf.polygon(geometry.coordinates);
     if(turf.booleanPointInPolygon(userPoint, poly)){
       km = 0;
-      nearestCoords = guessLatLng; // linija bo do iste točke
+      nearestCoords = guessLatLng;
     } else {
       let nearest = turf.nearestPointOnLine(turf.polygonToLine(poly), userPoint, {units:"kilometers"});
       km = Math.round(nearest.properties.dist);
       nearestCoords = {lat: nearest.geometry.coordinates[1], lng: nearest.geometry.coordinates[0]};
     }
-  } else if(geometry.type==="Point"){
-    let pt = turf.point(geometry.coordinates);
-    km = Math.round(turf.distance(userPoint, pt, {units:"kilometers"}));
-    nearestCoords = {lat: geometry.coordinates[1], lng: geometry.coordinates[0]};
-  } else if(geometry.type==="LineString"){
-    let line = turf.lineString(geometry.coordinates);
-    let nearest = turf.nearestPointOnLine(line, userPoint, {units:"kilometers"});
-    km = Math.round(nearest.properties.dist);
-    nearestCoords = {lat: nearest.geometry.coordinates[1], lng: nearest.geometry.coordinates[0]};
+
+  } else if(geometry.type==="Point" || geometry.type==="LineString"){
+    // Mesta in reke: 50 km buffer
+    let geom;
+    if(geometry.type==="Point") geom = turf.point(geometry.coordinates);
+    else geom = turf.lineString(geometry.coordinates);
+
+    let buffer = turf.buffer(geom, 50, {units:"kilometers"});
+    
+    // Prikaži buffer na mapi
+    let bufferCoords = buffer.geometry.coordinates[0].map(c => [c[1], c[0]]);
+    bufferLayer = L.polygon(bufferCoords, {color:"green", fillColor:"green", fillOpacity:0.2}).addTo(map);
+
+    if(turf.booleanPointInPolygon(userPoint, buffer)){
+      // Klik znotraj 50 km = 0 km
+      km = 0;
+      if(geometry.type==="Point") nearestCoords = {lat: geometry.coordinates[1], lng: geometry.coordinates[0]};
+      else {
+        let nearest = turf.nearestPointOnLine(geom, userPoint, {units:"kilometers"});
+        nearestCoords = {lat: nearest.geometry.coordinates[1], lng: nearest.geometry.coordinates[0]};
+      }
+    } else {
+      // Klik zunaj bufferja → izračun razdalje kot prej
+      if(geometry.type==="Point") {
+        km = Math.round(turf.distance(userPoint, geom, {units:"kilometers"}));
+        nearestCoords = {lat: geometry.coordinates[1], lng: geometry.coordinates[0]};
+      } else {
+        let nearest = turf.nearestPointOnLine(geom, userPoint, {units:"kilometers"});
+        km = Math.round(nearest.properties.dist);
+        nearestCoords = {lat: nearest.geometry.coordinates[1], lng: nearest.geometry.coordinates[0]};
+      }
+    }
   }
 
   totalDistance += km;
@@ -153,6 +179,9 @@ function confirmGuess(){
 
   // Prikaži modal z info in razdaljo
   showModal(currentFeature, km);
+
+  // Shrani bufferLayer, da ga lahko odstranimo ob naslednjem krogu
+  currentBufferLayer = bufferLayer;
 }
 
 function showModal(feature, km){
@@ -163,10 +192,11 @@ function showModal(feature, km){
 
 function closeModal(){
   document.getElementById("infoModal").style.display = "none";
-  // Odstrani prikaz poligona/linije in marker
+  // Odstrani prikaz poligona/linije, marker in buffer
   if(currentDisplayLayer){ map.removeLayer(currentDisplayLayer); currentDisplayLayer=null; }
   if(currentLine){ map.removeLayer(currentLine); currentLine=null; }
   if(guessMarker){ map.removeLayer(guessMarker); guessMarker=null; }
+  if(currentBufferLayer){ map.removeLayer(currentBufferLayer); currentBufferLayer=null; }
 }
 
 function endGame(){
