@@ -16,6 +16,11 @@
     font-size: 14px;
     z-index: 1000;
   }
+  #targetName {
+    font-size: 16px;
+    font-weight: bold;
+    margin-bottom: 5px;
+  }
 </style>
 </head>
 <body>
@@ -23,6 +28,7 @@
 <div id="map"></div>
 
 <div id="scoreBox">
+  <div id="targetName">–</div>
   <b>Napredek:</b> <span id="count">0</span> / 10<br>
   <b>Skupna razdalja:</b> <span id="total">0</span> km<br>
   <b>Najboljši rezultat:</b> <span id="best">–</span> km
@@ -45,7 +51,7 @@ if (bestScore !== null) {
   document.getElementById("best").textContent = bestScore;
 }
 
-// Naloži GeoJSON z vsemi geografskimi enotami
+// Naloži GeoJSON
 fetch("locations.geojson")
   .then(res => res.json())
   .then(data => {
@@ -60,13 +66,16 @@ function startRound() {
 
   // naključna izbira iz vseh features
   currentFeature = features[Math.floor(Math.random() * features.length)];
-  alert("Najdi: " + currentFeature.properties.name);
+  document.getElementById("targetName").textContent = "Najdi: " + currentFeature.properties.name;
 
-  // poslušalec klika
-  map.once("click", onMapClick);
+  // poslušalec za klik/dotik
+  map.once("click touchend", onMapClick);
 }
 
 function onMapClick(e) {
+  let latlng = e.latlng || (e.changedTouches ? {lat: e.changedTouches[0].clientY, lng: e.changedTouches[0].clientX} : null);
+  if(!latlng) return;
+
   let userPoint = turf.point([e.latlng.lng, e.latlng.lat]);
   let polygon = currentFeature.geometry;
 
@@ -78,16 +87,10 @@ function onMapClick(e) {
   document.getElementById("count").textContent = roundCount;
   document.getElementById("total").textContent = totalDistance;
 
+  // prikaži rdeči obris cilja
   let layer = L.geoJSON(currentFeature, { style: { color: "red", weight: 2 } }).addTo(map);
 
-  let center = turf.center(currentFeature).geometry.coordinates;
-  L.popup()
-    .setLatLng([center[1], center[0]])
-    .setContent("<b>" + currentFeature.properties.name + "</b><br>" +
-                "Zgrešil si: <b>" + km + " km</b><br><br>" +
-                currentFeature.properties.info)
-    .openOn(map);
-
+  // po 2 sekundah odstrani obris in začni naslednji krog
   setTimeout(() => {
     map.removeLayer(layer);
     startRound();
