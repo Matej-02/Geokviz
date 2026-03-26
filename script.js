@@ -23,13 +23,13 @@ if (bestScore !== null) {
 fetch("locations.geojson")
   .then(res => res.json())
   .then(data => {
-    console.log("GeoJSON loaded");
+    console.log("GeoJSON OK", data);
     features = data.features;
     startRound();
   })
   .catch(err => {
-    console.error("NAPAKA GEOJSON:", err);
-    alert("Ne morem naložiti locations.geojson");
+    console.error("GeoJSON ERROR:", err);
+    alert("Napaka pri nalaganju GeoJSON");
   });
 
 function startRound() {
@@ -44,91 +44,84 @@ function startRound() {
 
   alert("Najdi: " + currentFeature.properties.name);
 
-  // ENOTEN EVENT (desktop + mobile)
-  map.once("pointerup", handleMapInteraction);
+  // NAJBOLJ ZANESLJIVO
+  map.once("click", onMapClick);
 }
 
-function handleMapInteraction(e) {
+function onMapClick(e) {
   if (!clickEnabled) return;
   clickEnabled = false;
 
-  if (!e.latlng) {
-    console.log("Ni latlng!");
-    return;
+  console.log("KLIK:", e.latlng);
+
+  try {
+    let userPoint = turf.point([e.latlng.lng, e.latlng.lat]);
+
+    // 🔥 pomembno: podpira Polygon IN MultiPolygon
+    let boundary = turf.polygonToLine(currentFeature);
+
+    let nearest = turf.nearestPointOnLine(boundary, userPoint, {
+      units: "kilometers"
+    });
+
+    let distKm = nearest.properties.dist || 0;
+    let km = Math.round(distKm);
+
+    totalDistance += km;
+    roundCount++;
+
+    document.getElementById("count").textContent = roundCount;
+    document.getElementById("total").textContent = totalDistance;
+
+    let layer = L.geoJSON(currentFeature, {
+      style: { color: "red", weight: 2 }
+    }).addTo(map);
+
+    let userMarker = L.marker(e.latlng).addTo(map);
+
+    let coords = nearest.geometry.coordinates;
+    let nearestMarker = L.circleMarker([coords[1], coords[0]], {
+      radius: 6
+    }).addTo(map);
+
+    let line = L.polyline([
+      e.latlng,
+      [coords[1], coords[0]]
+    ]).addTo(map);
+
+    L.popup()
+      .setLatLng(e.latlng)
+      .setContent(
+        "<b>" + currentFeature.properties.name + "</b><br>" +
+        "Zgrešil si: <b>" + km + " km</b>"
+      )
+      .openOn(map);
+
+    setTimeout(() => {
+      map.removeLayer(layer);
+      map.removeLayer(userMarker);
+      map.removeLayer(nearestMarker);
+      map.removeLayer(line);
+      startRound();
+    }, 2500);
+
+  } catch (err) {
+    console.error("NAPAKA:", err);
+    alert("Napaka pri izračunu (poglej console)");
+    clickEnabled = true;
   }
-
-  onMapClick(e.latlng);
-}
-
-function onMapClick(latlng) {
-
-  let userPoint = turf.point([latlng.lng, latlng.lat]);
-
-  // ROB POLIGONA
-  let boundary = turf.polygonToLine(currentFeature);
-
-  let nearest = turf.nearestPointOnLine(boundary, userPoint, {
-    units: "kilometers"
-  });
-
-  let distKm = nearest.properties.dist;
-  let km = Math.round(distKm);
-
-  totalDistance += km;
-  roundCount++;
-
-  document.getElementById("count").textContent = roundCount;
-  document.getElementById("total").textContent = totalDistance;
-
-  // PRIKAŽI POLIGON
-  let layer = L.geoJSON(currentFeature, {
-    style: { color: "red", weight: 2 }
-  }).addTo(map);
-
-  // USER MARKER
-  let userMarker = L.marker(latlng).addTo(map);
-
-  // NEAREST POINT
-  let coords = nearest.geometry.coordinates;
-  let nearestMarker = L.circleMarker([coords[1], coords[0]], {
-    radius: 6
-  }).addTo(map);
-
-  // LINE
-  let line = L.polyline([
-    latlng,
-    [coords[1], coords[0]]
-  ]).addTo(map);
-
-  // POPUP
-  L.popup()
-    .setLatLng(latlng)
-    .setContent(
-      "<b>" + currentFeature.properties.name + "</b><br>" +
-      "Zgrešil si: <b>" + km + " km</b><br><br>" +
-      currentFeature.properties.info
-    )
-    .openOn(map);
-
-  setTimeout(() => {
-    map.removeLayer(layer);
-    map.removeLayer(userMarker);
-    map.removeLayer(nearestMarker);
-    map.removeLayer(line);
-    startRound();
-  }, 2500);
 }
 
 function endGame() {
-  alert("KONEC IGRE!\nSkupna razdalja: " + totalDistance + " km");
+  alert("KONEC IGRE!\nSkupaj: " + totalDistance + " km");
 
   if (bestScore === null || totalDistance < bestScore) {
     localStorage.setItem("bestScore", totalDistance);
     document.getElementById("best").textContent = totalDistance;
-    alert("NOVO OSEBNI REKORD!");
+    alert("REKORD!");
   }
 
-  if (confirm("Igraj znova?")) {
+  if (confirm("Ponovi igro?")) {
     roundCount = 0;
     totalDistance = 0;
     document.getElementById("count").textContent = 0;
