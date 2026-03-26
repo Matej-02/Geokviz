@@ -1,4 +1,6 @@
-let map = L.map('map').setView([54, 15], 4);
+let map = L.map('map', {
+  tap: true
+}).setView([54, 15], 4);
 
 L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
   attribution: ''
@@ -32,22 +34,39 @@ function startRound() {
   clickEnabled = true;
 
   currentFeature = features[Math.floor(Math.random() * features.length)];
-
   alert("Najdi: " + currentFeature.properties.name);
 
-  map.once("click", onMapClick);
+  // poslušaj oba dogodka
+  map.once("click", handleMapInteraction);
+  map.once("touchend", handleMapInteraction);
 }
 
-function onMapClick(e) {
+function handleMapInteraction(e) {
   if (!clickEnabled) return;
   clickEnabled = false;
 
+  let latlng;
+
+  // če je normalen klik
+  if (e.latlng) {
+    latlng = e.latlng;
+  } 
+  // če je touch event
+  else if (e.originalEvent && e.originalEvent.changedTouches) {
+    let touch = e.originalEvent.changedTouches[0];
+    latlng = map.mouseEventToLatLng(touch);
+  } else {
+    return;
+  }
+
+  onMapClick({ latlng });
+}
+
+function onMapClick(e) {
   let userPoint = turf.point([e.latlng.lng, e.latlng.lat]);
 
-  // Pretvori poligon v rob (line)
   let boundary = turf.polygonToLine(currentFeature);
 
-  // Najbližja točka na robu
   let nearest = turf.nearestPointOnLine(boundary, userPoint, {
     units: "kilometers"
   });
@@ -61,27 +80,22 @@ function onMapClick(e) {
   document.getElementById("count").textContent = roundCount;
   document.getElementById("total").textContent = totalDistance;
 
-  // Prikaži poligon
   let layer = L.geoJSON(currentFeature, {
     style: { color: "red", weight: 2 }
   }).addTo(map);
 
-  // Marker uporabnika
   let userMarker = L.marker(e.latlng).addTo(map);
 
-  // Marker najbližje točke
   let nearestCoords = nearest.geometry.coordinates;
   let nearestMarker = L.circleMarker([nearestCoords[1], nearestCoords[0]], {
     radius: 6
   }).addTo(map);
 
-  // Linija med točkama
   let line = L.polyline([
     e.latlng,
     [nearestCoords[1], nearestCoords[0]]
   ]).addTo(map);
 
-  // Popup
   L.popup()
     .setLatLng(e.latlng)
     .setContent(
