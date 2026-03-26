@@ -78,6 +78,8 @@ let totalDistance = 0;
 let guessLatLng = null;
 let guessMarker = null;
 let bestScore = localStorage.getItem("bestScore");
+let currentDisplayLayer = null;
+let currentLine = null;
 
 if(bestScore) document.getElementById("best").textContent = bestScore;
 
@@ -111,22 +113,27 @@ function confirmGuess(){
   let userPoint = turf.point([guessLatLng.lng, guessLatLng.lat]);
   let geometry = currentFeature.geometry;
   let km = 0;
+  let nearestCoords = null;
 
   if(geometry.type==="Polygon"){
     let poly = turf.polygon(geometry.coordinates);
     if(turf.booleanPointInPolygon(userPoint, poly)){
       km = 0;
+      nearestCoords = guessLatLng; // linija bo do iste točke
     } else {
       let nearest = turf.nearestPointOnLine(turf.polygonToLine(poly), userPoint, {units:"kilometers"});
       km = Math.round(nearest.properties.dist);
+      nearestCoords = {lat: nearest.geometry.coordinates[1], lng: nearest.geometry.coordinates[0]};
     }
   } else if(geometry.type==="Point"){
     let pt = turf.point(geometry.coordinates);
     km = Math.round(turf.distance(userPoint, pt, {units:"kilometers"}));
+    nearestCoords = {lat: geometry.coordinates[1], lng: geometry.coordinates[0]};
   } else if(geometry.type==="LineString"){
     let line = turf.lineString(geometry.coordinates);
     let nearest = turf.nearestPointOnLine(line, userPoint, {units:"kilometers"});
     km = Math.round(nearest.properties.dist);
+    nearestCoords = {lat: nearest.geometry.coordinates[1], lng: nearest.geometry.coordinates[0]};
   }
 
   totalDistance += km;
@@ -134,29 +141,32 @@ function confirmGuess(){
   document.getElementById("count").textContent = roundCount;
   document.getElementById("total").textContent = totalDistance;
 
-  // Prikaži modal z info
-  showModal(currentFeature);
+  // Prikaži poligon/linijo/točko
+  if(geometry.type==="Polygon") currentDisplayLayer = L.polygon(geometry.coordinates[0].map(c=>[c[1],c[0]]), {color:"red"}).addTo(map);
+  else if(geometry.type==="Point") currentDisplayLayer = L.marker([geometry.coordinates[1],geometry.coordinates[0]]).addTo(map);
+  else if(geometry.type==="LineString") currentDisplayLayer = L.polyline(geometry.coordinates.map(c=>[c[1],c[0]]), {color:"red"}).addTo(map);
 
-  // Prikaz poligona/linije/točke
-  let displayLayer;
-  if(geometry.type==="Polygon") displayLayer = L.polygon(geometry.coordinates[0].map(c=>[c[1],c[0]]), {color:"red"}).addTo(map);
-  else if(geometry.type==="Point") displayLayer = L.marker([geometry.coordinates[1],geometry.coordinates[0]]).addTo(map);
-  else if(geometry.type==="LineString") displayLayer = L.polyline(geometry.coordinates.map(c=>[c[1],c[0]]), {color:"red"}).addTo(map);
+  // Nariši linijo med uporabnikovim klikom in najbližjo točko/poligon
+  if(guessLatLng && nearestCoords){
+    currentLine = L.polyline([guessLatLng, nearestCoords], {color:"blue"}).addTo(map);
+  }
 
-  if(guessMarker){ map.removeLayer(guessMarker); guessMarker=null; }
-  // Odstrani layer šele po kliku "Naprej"
-  window.currentDisplayLayer = displayLayer;
+  // Prikaži modal z info in razdaljo
+  showModal(currentFeature, km);
 }
 
-function showModal(feature){
+function showModal(feature, km){
   document.getElementById("modalName").textContent = feature.properties.name;
-  document.getElementById("modalInfo").textContent = feature.properties.info || "Brez dodatnih informacij";
+  document.getElementById("modalInfo").textContent = (feature.properties.info || "Brez dodatnih informacij") + "\nZgrešil/a si: " + km + " km";
   document.getElementById("infoModal").style.display = "block";
 }
 
 function closeModal(){
   document.getElementById("infoModal").style.display = "none";
-  if(window.currentDisplayLayer){ map.removeLayer(window.currentDisplayLayer); window.currentDisplayLayer=null; }
+  // Odstrani prikaz poligona/linije in marker
+  if(currentDisplayLayer){ map.removeLayer(currentDisplayLayer); currentDisplayLayer=null; }
+  if(currentLine){ map.removeLayer(currentLine); currentLine=null; }
+  if(guessMarker){ map.removeLayer(guessMarker); guessMarker=null; }
 }
 
 function endGame(){
