@@ -1,4 +1,4 @@
-let map = L.map('map').setView([44, 17], 6);
+let map = L.map('map').setView([44,17],6);
 
 L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
 
@@ -7,56 +7,40 @@ let currentFeature;
 let roundCount = 0;
 let totalDistance = 0;
 let guessLatLng = null;
+let guessMarker = null;
 
 let bestScore = localStorage.getItem("bestScore");
-if (bestScore !== null) {
-  bestScore = Number(bestScore);
-  document.getElementById("best").textContent = bestScore;
-}
+if(bestScore) document.getElementById("best").textContent = bestScore;
 
-// LOAD DATA
+// NALOŽI GEOJSON
 fetch("locations.geojson")
   .then(r => r.json())
-  .then(data => {
-    features = data.features;
-    startRound();
-  });
+  .then(data => { features = data.features; startRound(); })
+  .catch(err=>{ alert("GeoJSON ni naložen"); console.error(err); });
 
-// MAP CLICK (works on mobile + PC)
-map.on("click", function(e) {
+// klik na mapo
+map.on("click", function(e){
   guessLatLng = e.latlng;
-
-  if (window.guessMarker) {
-    map.removeLayer(window.guessMarker);
-  }
-
-  window.guessMarker = L.marker(e.latlng).addTo(map);
+  if(guessMarker) map.removeLayer(guessMarker);
+  guessMarker = L.marker(e.latlng).addTo(map);
 });
 
-function startRound() {
-  if (roundCount === 10) return endGame();
+document.getElementById("confirmBtn").addEventListener("click", confirmGuess);
 
-  guessLatLng = null;
-
-  currentFeature = features[Math.floor(Math.random() * features.length)];
-
-  document.getElementById("task").innerHTML =
-    "<b>Najdi:</b> " + currentFeature.properties.name;
+function startRound(){
+  if(roundCount>=10) return endGame();
+  guessLatLng=null;
+  if(guessMarker){ map.removeLayer(guessMarker); guessMarker=null; }
+  currentFeature = features[Math.floor(Math.random()*features.length)];
+  document.getElementById("task").textContent = "Najdi: " + currentFeature.properties.name;
 }
 
-function confirmGuess() {
-  if (!guessLatLng) {
-    alert("Najprej klikni na zemljevid!");
-    return;
-  }
+function confirmGuess(){
+  if(!guessLatLng){ alert("Najprej klikni na zemljevid!"); return; }
 
   let userPoint = turf.point([guessLatLng.lng, guessLatLng.lat]);
   let boundary = turf.polygonToLine(currentFeature);
-
-  let nearest = turf.nearestPointOnLine(boundary, userPoint, {
-    units: "kilometers"
-  });
-
+  let nearest = turf.nearestPointOnLine(boundary, userPoint, {units:"kilometers"});
   let km = Math.round(nearest.properties.dist);
 
   totalDistance += km;
@@ -65,44 +49,31 @@ function confirmGuess() {
   document.getElementById("count").textContent = roundCount;
   document.getElementById("total").textContent = totalDistance;
 
-  let poly = L.geoJSON(currentFeature, {
-    style: { color: "red" }
-  }).addTo(map);
-
+  let poly = L.geoJSON(currentFeature,{style:{color:"red"}}).addTo(map);
   let coords = nearest.geometry.coordinates;
+  let nearestMarker = L.circleMarker([coords[1],coords[0]],{radius:6}).addTo(map);
+  let line = L.polyline([guessLatLng,[coords[1],coords[0]]]).addTo(map);
 
-  let nearestMarker = L.circleMarker([coords[1], coords[0]], {
-    radius: 6
-  }).addTo(map);
-
-  let line = L.polyline([
-    guessLatLng,
-    [coords[1], coords[0]]
-  ]).addTo(map);
-
-  setTimeout(() => {
+  setTimeout(()=>{
     map.removeLayer(poly);
     map.removeLayer(nearestMarker);
     map.removeLayer(line);
-    map.removeLayer(window.guessMarker);
+    if(guessMarker){ map.removeLayer(guessMarker); guessMarker=null; }
     startRound();
-  }, 2000);
+  },2000);
 }
 
-function endGame() {
-  alert("Konec! Skupaj: " + totalDistance + " km");
-
-  if (!bestScore || totalDistance < bestScore) {
+function endGame(){
+  alert("Konec! Skupaj: "+totalDistance+" km");
+  if(!bestScore || totalDistance<bestScore){
     localStorage.setItem("bestScore", totalDistance);
     document.getElementById("best").textContent = totalDistance;
     alert("Nov rekord!");
   }
-
-  if (confirm("Ponovi?")) {
-    roundCount = 0;
-    totalDistance = 0;
-    document.getElementById("count").textContent = 0;
-    document.getElementById("total").textContent = 0;
+  if(confirm("Ponovi igro?")){
+    roundCount=0; totalDistance=0;
+    document.getElementById("count").textContent=0;
+    document.getElementById("total").textContent=0;
     startRound();
   }
 }
