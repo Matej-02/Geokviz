@@ -22,14 +22,7 @@ body { margin:0; }
   font-size:14px;
   box-shadow:0 0 10px rgba(0,0,0,0.3);
 }
-  
-<div id="infoBox" style="display:none; position:absolute; top:50%; left:50%; transform:translate(-50%,-50%);
-     background:white; padding:15px; border-radius:8px; z-index:2000; box-shadow:0 0 15px rgba(0,0,0,0.5);">
-  <div id="infoTitle" style="font-weight:bold; margin-bottom:5px;"></div>
-  <div id="infoText" style="margin-bottom:10px;"></div>
-  <button id="nextBtn">Naprej</button>
-</div>
-  
+
 #task {
   font-weight:bold;
   margin-bottom:5px;
@@ -39,6 +32,22 @@ button {
   margin-top:5px;
   width:100%;
 }
+
+/* STIL ZA MODAL INFO OKNO */
+#infoBox {
+  display:none;
+  position:absolute;
+  top:50%;
+  left:50%;
+  transform:translate(-50%,-50%);
+  background:white;
+  padding:15px;
+  border-radius:8px;
+  z-index:2000;
+  box-shadow:0 0 15px rgba(0,0,0,0.5);
+}
+#infoTitle { font-weight:bold; margin-bottom:5px; }
+#infoText { margin-bottom:10px; white-space:pre-line; } /* da \n deluje */
 </style>
 </head>
 
@@ -51,6 +60,13 @@ button {
   <div>Skupaj: <span id="total">0</span> km</div>
   <div>Best: <span id="best">–</span> km</div>
   <button id="confirmBtn">Potrdi lokacijo</button>
+</div>
+
+<!-- MODAL OKNO Z INFORMACIJAMI -->
+<div id="infoBox">
+  <div id="infoTitle"></div>
+  <div id="infoText"></div>
+  <button id="nextBtn">Naprej</button>
 </div>
 
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
