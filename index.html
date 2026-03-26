@@ -3,11 +3,11 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>GeoKviz Napredno</title>
+<title>GeoKviz</title>
 
 <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
 <style>
-body { margin:0; }
+body { margin:0; font-family: sans-serif; }
 #map { height:100vh; width:100vw; }
 
 #scoreBox {
@@ -21,12 +21,10 @@ body { margin:0; }
   font-size:14px;
   box-shadow:0 0 10px rgba(0,0,0,0.3);
 }
-
 #task { font-weight:bold; margin-bottom:5px; }
 button { margin-top:5px; width:100%; }
 
-/* Modal */
-#infoModal {
+#filterBox, #infoModal {
   display:none;
   position: absolute;
   top:50%; left:50%;
@@ -36,72 +34,59 @@ button { margin-top:5px; width:100%; }
   border-radius:8px;
   z-index:2000;
   box-shadow:0 0 20px rgba(0,0,0,0.5);
-  width: 300px;
+  width:300px;
 }
-#infoModal h3 { margin-top:0; }
+#filterBox h3, #infoModal h3 { margin-top:0; }
 
-/* Filter panel */
-#filterBox {
-  position:absolute;
-  top:10px;
-  right:10px;
-  background:white;
-  padding:10px;
-  border-radius:8px;
-  z-index:1000;
-  box-shadow:0 0 10px rgba(0,0,0,0.3);
-  max-height: 90vh;
-  overflow-y: auto;
+#overlay {
+  display: none;
+  position: absolute;
+  top:0; left:0;
+  width:100%;
+  height:100%;
+  z-index:1500; 
+  background: rgba(0,0,0,0); 
 }
-#filterBox h4 { margin-top:0; margin-bottom:5px; font-size:16px; }
-#filterBox label { display:block; margin-bottom:3px; }
-#filterBox select { width:100%; margin-top:3px; }
 </style>
 </head>
 
 <body>
 <div id="map"></div>
 
+<div id="overlay"></div>
+
 <div id="scoreBox">
-  <div id="task">Izberi filtre in začni igro</div>
-  <div>Napredek: <span id="count">0</span>/<span id="totalRounds">10</span></div>
+  <div id="task">Loading...</div>
+  <div>Napredek: <span id="count">0</span>/<span id="rounds">10</span></div>
   <div>Skupaj: <span id="total">0</span> km</div>
   <div>Best: <span id="best">–</span> km</div>
   <button id="confirmBtn">Potrdi lokacijo</button>
+  <button id="openFilterBtn">Izberi filtre / runde</button>
 </div>
 
+<!-- Filter Modal -->
+<div id="filterBox">
+  <h3>Filtriraj elemente</h3>
+  <label>Država:</label><br>
+  <select id="filterCountry"><option value="all">Vse države</option></select><br><br>
+  <label>Vrsta:</label><br>
+  <select id="filterType"><option value="all">Vse vrste</option></select><br><br>
+  <label>Število rund:</label><br>
+  <select id="filterRounds">
+    <option value="10">10</option>
+    <option value="20">20</option>
+    <option value="30">30</option>
+    <option value="50">50</option>
+  </select><br><br>
+  <button id="applyFilterBtn">Uporabi filtre</button>
+  <button id="closeFilterBtn">Zapri</button>
+</div>
+
+<!-- Info Modal -->
 <div id="infoModal">
   <h3 id="modalName"></h3>
   <p id="modalInfo"></p>
   <button id="nextBtn">Naprej</button>
-</div>
-
-<div id="filterBox">
-  <h4>Filtriraj elemente</h4>
-  <strong>Vrsta:</strong>
-  <select id="typeFilter" multiple size="6">
-    <option value="mesto">Mesta</option>
-    <option value="glavno_mesto">Glavna mesta</option>
-    <option value="gorovje">Gorovja</option>
-    <option value="kotlina">Kotliny</option>
-    <option value="reka">Reke</option>
-    <option value="jezero">Jezera</option>
-  </select>
-
-  <strong>Države:</strong>
-  <select id="countryFilter" multiple size="6">
-    <!-- seznam držav bo dodan preko JS -->
-  </select>
-
-  <strong>Število rund:</strong>
-  <select id="roundCountSelect">
-    <option value="10" selected>10</option>
-    <option value="20">20</option>
-    <option value="30">30</option>
-    <option value="50">50</option>
-  </select>
-
-  <button id="startBtn" style="margin-top:5px;">Začni igro</button>
 </div>
 
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
@@ -115,17 +100,19 @@ L.tileLayer('https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}{r}.png
   maxZoom: 19
 }).addTo(map);
 
+let overlay = document.getElementById("overlay");
+
 let features = [];
 let filteredFeatures = [];
 let currentFeature;
 let roundCount = 0;
-let totalRounds = 10;
 let totalDistance = 0;
 let guessLatLng = null;
 let guessMarker = null;
 let currentLine = null;
 let currentBufferLayer = null;
 let correctLayer = null;
+let roundsTotal = 10;
 
 let bestScore = localStorage.getItem("bestScore");
 if(bestScore) document.getElementById("best").textContent = bestScore;
@@ -133,84 +120,80 @@ if(bestScore) document.getElementById("best").textContent = bestScore;
 // Naloži GeoJSON
 fetch("locations.geojson")
   .then(r => r.json())
-  .then(data => {
-    features = data.features;
-    populateCountrySelect();
+  .then(data => { 
+    features = data.features; 
+    populateFilters();
+    filteredFeatures = features.slice(); // default vsi elementi
+    startRound();
   })
   .catch(err=>{ alert("GeoJSON ni naložen"); console.error(err); });
 
-// Napolni select z državami
-function populateCountrySelect(){
-  let countries = new Set();
-  features.forEach(f => {
-    if(f.properties.drzava){
-      f.properties.drzava.split(",").forEach(c => countries.add(c.trim()));
-    }
-  });
-  let select = document.getElementById("countryFilter");
-  countries.forEach(c => {
-    let opt = document.createElement("option");
-    opt.value = c;
-    opt.textContent = c;
-    select.appendChild(opt);
-  });
-}
+// DOM elementi
+const filterBox = document.getElementById("filterBox");
+const infoModal = document.getElementById("infoModal");
+const filterCountry = document.getElementById("filterCountry");
+const filterType = document.getElementById("filterType");
+const filterRounds = document.getElementById("filterRounds");
 
-// Klik na mapo
+// Klik na karto
 map.on("click", function(e){
+  if(overlay.style.display === "block") return; // ne deluje če je modal
   guessLatLng = e.latlng;
   if(guessMarker) map.removeLayer(guessMarker);
   guessMarker = L.marker(e.latlng).addTo(map);
 });
 
-// START IGRE
-document.getElementById("startBtn").addEventListener("click", () => {
-  const typeSelect = document.getElementById("typeFilter");
-  const selectedTypes = Array.from(typeSelect.selectedOptions).map(opt=>opt.value);
+// Gumbi
+document.getElementById("confirmBtn").addEventListener("click", confirmGuess);
+document.getElementById("nextBtn").addEventListener("click", ()=>{ closeModal(); startRound(); });
+document.getElementById("openFilterBtn").addEventListener("click", ()=>{ showFilterModal(); });
+document.getElementById("closeFilterBtn").addEventListener("click", ()=>{ closeFilterModal(); });
+document.getElementById("applyFilterBtn").addEventListener("click", applyFilters);
 
-  const select = document.getElementById("countryFilter");
-  const selectedCountries = Array.from(select.selectedOptions).map(opt=>opt.value);
+// Funkcije
+function populateFilters(){
+  let countries = new Set();
+  let types = new Set();
+  features.forEach(f=>{
+    if(f.properties.drzava) f.properties.drzava.split(",").forEach(c=>countries.add(c.trim()));
+    if(f.properties.vrsta) types.add(f.properties.vrsta);
+  });
+  countries.forEach(c=>{
+    let opt = document.createElement("option");
+    opt.value = c; opt.textContent = c;
+    filterCountry.appendChild(opt);
+  });
+  types.forEach(t=>{
+    let opt = document.createElement("option");
+    opt.value = t; opt.textContent = t;
+    filterType.appendChild(opt);
+  });
+}
 
-  totalRounds = parseInt(document.getElementById("roundCountSelect").value);
-  document.getElementById("totalRounds").textContent = totalRounds;
+function applyFilters(){
+  let country = filterCountry.value;
+  let type = filterType.value;
+  roundsTotal = parseInt(filterRounds.value);
+  document.getElementById("rounds").textContent = roundsTotal;
 
-  filteredFeatures = features.filter(f => {
-    let typeMatch = selectedTypes.length===0 || 
-      selectedTypes.includes(f.properties.vrsta) || 
-      (f.properties.glavno_mesto==="da" && selectedTypes.includes("glavno_mesto"));
-    let countryMatch = selectedCountries.length===0 || 
-      (f.properties.drzava && selectedCountries.some(c => f.properties.drzava.includes(c)));
-    return typeMatch && countryMatch;
+  filteredFeatures = features.filter(f=>{
+    let countryMatch = (country==="all") || (f.properties.drzava && f.properties.drzava.includes(country));
+    let typeMatch = (type==="all") || (f.properties.vrsta && f.properties.vrsta===type);
+    return countryMatch && typeMatch;
   });
 
-  if(filteredFeatures.length===0){
-    alert("Ni elementov z izbranimi kriteriji!");
-    return;
-  }
+  roundCount=0; totalDistance=0;
+  document.getElementById("count").textContent=0;
+  document.getElementById("total").textContent=0;
 
-  if(totalRounds > filteredFeatures.length){
-    alert(`Število rund (${totalRounds}) je večje od števila elementov (${filteredFeatures.length}). Elementi se bodo ponavljali.`);
-  }
-
-  document.getElementById("filterBox").style.display="none";
-  roundCount = 0;
-  totalDistance = 0;
-  document.getElementById("count").textContent = 0;
-  document.getElementById("total").textContent = 0;
+  closeFilterModal();
   startRound();
-});
-
-document.getElementById("confirmBtn").addEventListener("click", confirmGuess);
-document.getElementById("nextBtn").addEventListener("click", ()=>{
-  closeModal();
-  startRound();
-});
+}
 
 function startRound(){
-  if(roundCount>=totalRounds) return endGame();
+  if(roundCount>=roundsTotal) return endGame();
   guessLatLng=null;
   if(guessMarker){ map.removeLayer(guessMarker); guessMarker=null; }
-
   currentFeature = filteredFeatures[Math.floor(Math.random()*filteredFeatures.length)];
   document.getElementById("task").textContent = "Najdi: " + currentFeature.properties.name;
 }
@@ -238,7 +221,10 @@ function confirmGuess(){
     }
 
   } else if(geometry.type==="Point" || geometry.type==="LineString"){
-    let geom = geometry.type==="Point" ? turf.point(geometry.coordinates) : turf.lineString(geometry.coordinates);
+    let geom;
+    if(geometry.type==="Point") geom = turf.point(geometry.coordinates);
+    else geom = turf.lineString(geometry.coordinates);
+
     let buffer = turf.buffer(geom, 50, {units:"kilometers"});
     let bufferCoords = buffer.geometry.coordinates[0].map(c => [c[1], c[0]]);
     bufferLayer = L.polygon(bufferCoords, {color:"green", fillColor:"green", fillOpacity:0.2}).addTo(map);
@@ -258,7 +244,11 @@ function confirmGuess(){
 
     if(turf.booleanPointInPolygon(userPoint, buffer)){
       km = 0;
-      nearestCoords = geometry.type==="Point" ? {lat: geometry.coordinates[1], lng: geometry.coordinates[0]} : turf.nearestPointOnLine(geom, userPoint, {units:"kilometers"}).geometry.coordinates;
+      if(geometry.type==="Point") nearestCoords = {lat: geometry.coordinates[1], lng: geometry.coordinates[0]};
+      else {
+        let nearest = turf.nearestPointOnLine(geom, userPoint, {units:"kilometers"});
+        nearestCoords = {lat: nearest.geometry.coordinates[1], lng: nearest.geometry.coordinates[0]};
+      }
     } else {
       let nearestOnBuffer = turf.nearestPointOnLine(turf.polygonToLine(buffer), userPoint, {units:"kilometers"});
       km = Math.round(nearestOnBuffer.properties.dist);
@@ -282,15 +272,27 @@ function confirmGuess(){
 function showModal(feature, km){
   document.getElementById("modalName").textContent = feature.properties.name;
   document.getElementById("modalInfo").textContent = (feature.properties.info || "Brez dodatnih informacij") + "\nZgrešil/a si: " + km + " km";
-  document.getElementById("infoModal").style.display = "block";
+  infoModal.style.display = "block";
+  overlay.style.display = "block";
 }
 
 function closeModal(){
-  document.getElementById("infoModal").style.display = "none";
+  infoModal.style.display = "none";
+  overlay.style.display = "none";
   if(currentLine){ map.removeLayer(currentLine); currentLine=null; }
   if(guessMarker){ map.removeLayer(guessMarker); guessMarker=null; }
   if(currentBufferLayer){ map.removeLayer(currentBufferLayer); currentBufferLayer=null; }
   if(correctLayer){ map.removeLayer(correctLayer); correctLayer=null; }
+}
+
+function showFilterModal(){
+  filterBox.style.display = "block";
+  overlay.style.display = "block";
+}
+
+function closeFilterModal(){
+  filterBox.style.display = "none";
+  overlay.style.display = "none";
 }
 
 function endGame(){
@@ -304,7 +306,7 @@ function endGame(){
     roundCount=0; totalDistance=0;
     document.getElementById("count").textContent=0;
     document.getElementById("total").textContent=0;
-    document.getElementById("filterBox").style.display="block";
+    startRound();
   }
 }
 </script>
