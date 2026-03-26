@@ -9,8 +9,10 @@ let totalDistance = 0;
 let guessLatLng = null;
 let guessMarker = null;
 
-let bestScore = localStorage.getItem("bestScore");
+let bestScore = parseInt(localStorage.getItem("bestScore"));
 if(bestScore) document.getElementById("best").textContent = bestScore;
+
+let polyLayer, nearestMarker, line;
 
 // NALOŽI GEOJSON
 fetch("locations.geojson")
@@ -25,7 +27,17 @@ map.on("click", function(e){
   guessMarker = L.marker(e.latlng).addTo(map);
 });
 
+// poslušalci
 document.getElementById("confirmBtn").addEventListener("click", confirmGuess);
+
+document.getElementById("nextBtn").addEventListener("click", ()=>{
+  document.getElementById("infoBox").style.display="none";
+  if(polyLayer) map.removeLayer(polyLayer);
+  if(nearestMarker) map.removeLayer(nearestMarker);
+  if(line) map.removeLayer(line);
+  if(guessMarker){ map.removeLayer(guessMarker); guessMarker=null; }
+  startRound();
+});
 
 function startRound(){
   if(roundCount>=10) return endGame();
@@ -39,28 +51,39 @@ function confirmGuess(){
   if(!guessLatLng){ alert("Najprej klikni na zemljevid!"); return; }
 
   let userPoint = turf.point([guessLatLng.lng, guessLatLng.lat]);
-  let boundary = turf.polygonToLine(currentFeature);
-  let nearest = turf.nearestPointOnLine(boundary, userPoint, {units:"kilometers"});
-  let km = Math.round(nearest.properties.dist);
+  let polygon = currentFeature.geometry;
+
+  // preveri, če je znotraj poligona
+  let isInside = turf.booleanPointInPolygon(userPoint, polygon);
+
+  let km;
+  if(isInside){
+    km = 0;
+  } else {
+    // poišči najbližjo točko na meji
+    let boundary = turf.polygonToLine(currentFeature);
+    let nearest = turf.nearestPointOnLine(boundary, userPoint, {units:"kilometers"});
+    let nearestPoint = turf.point(nearest.geometry.coordinates);
+    km = Math.round(turf.distance(userPoint, nearestPoint, {units:"kilometers"}));
+    
+    // prikaži na zemljevidu
+    nearestMarker = L.circleMarker([nearest.geometry.coordinates[1], nearest.geometry.coordinates[0]],{radius:6}).addTo(map);
+    line = L.polyline([guessLatLng,[nearest.geometry.coordinates[1], nearest.geometry.coordinates[0]]]).addTo(map);
+  }
 
   totalDistance += km;
   roundCount++;
-
   document.getElementById("count").textContent = roundCount;
   document.getElementById("total").textContent = totalDistance;
 
-  let poly = L.geoJSON(currentFeature,{style:{color:"red"}}).addTo(map);
-  let coords = nearest.geometry.coordinates;
-  let nearestMarker = L.circleMarker([coords[1],coords[0]],{radius:6}).addTo(map);
-  let line = L.polyline([guessLatLng,[coords[1],coords[0]]]).addTo(map);
+  // prikaži poligon
+  polyLayer = L.geoJSON(currentFeature,{style:{color:"red"}}).addTo(map);
 
-  setTimeout(()=>{
-    map.removeLayer(poly);
-    map.removeLayer(nearestMarker);
-    map.removeLayer(line);
-    if(guessMarker){ map.removeLayer(guessMarker); guessMarker=null; }
-    startRound();
-  },2000);
+  // prikaži infoBox
+  document.getElementById("infoTitle").textContent = currentFeature.properties.name;
+  document.getElementById("infoText").textContent = currentFeature.properties.info + 
+        (km>0 ? `\nRazdalja: ${km} km` : "\nTočka je znotraj poligona! Razdalja: 0 km");
+  document.getElementById("infoBox").style.display="block";
 }
 
 function endGame(){
