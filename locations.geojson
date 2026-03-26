@@ -1,45 +1,75 @@
 {
   "type": "FeatureCollection",
   "features": [
-    /* ------------ GOROVJA, PLANOTE, KOTLINE ------------ */
-    {"type":"Feature","properties":{"name":"Alpe","info":"Najvišji gorovje srednje Evrope.","drzava":"Avstrija,Švica,Francija,Italija,Nemčija,Slovenija","vrsta":"gorovje"},"geometry":{"type":"Polygon","coordinates":[[[8.0,45.0],[12.5,45.0],[12.5,48.5],[8.0,48.5],[8.0,45.0]]]}},
-    {"type":"Feature","properties":{"name":"Karpati","info":"Veliko gorovje vzhodne Evrope.","drzava":"Slovaška,Poljska,Ukrajina,Romunija","vrsta":"gorovje"},"geometry":{"type":"Polygon","coordinates":[[[19.0,47.0],[25.0,47.0],[25.0,50.0],[19.0,50.0],[19.0,47.0]]]}},
-    {"type":"Feature","properties":{"name":"Dinaridi","info":"Gorovje jugovzhodne Evrope.","drzava":"Slovenija,Hrvaška,BiH,Črna gora,Albanija","vrsta":"gorovje"},"geometry":{"type":"Polygon","coordinates":[[[12.0,43.0],[16.0,43.0],[16.0,45.5],[12.0,45.5],[12.0,43.0]]]}},
-    {"type":"Feature","properties":{"name":"Skandinavske gore","info":"Gorovje severne Evrope.","drzava":"Norveška,Švedska","vrsta":"gorovje"},"geometry":{"type":"Polygon","coordinates":[[[6.0,60.0],[20.0,60.0],[20.0,69.0],[6.0,69.0],[6.0,60.0]]]}},
-    {"type":"Feature","properties":{"name":"Penini","info":"Dolga veriga gorovij v Veliki Britaniji.","drzava":"Velika Britanija","vrsta":"gorovje"},"geometry":{"type":"Polygon","coordinates":[[[-5.0,52.0],[-3.0,52.0],[-3.0,53.5],[-5.0,53.5],[-5.0,52.0]]]}},
-    {"type":"Feature","properties":{"name":"Massif Central","info":"Planota in gorovje v Franciji.","drzava":"Francija","vrsta":"planota"},"geometry":{"type":"Polygon","coordinates":[[[2.0,44.0],[4.0,44.0],[4.0,46.0],[2.0,46.0],[2.0,44.0]]]}},
-    {"type":"Feature","properties":{"name":"Pannonian Basin","info":"Velika nizinska kotlina Srednje Evrope.","drzava":"Madžarska,Slovenija,Slovaška,Avstrija,Romunija","vrsta":"kotlina"},"geometry":{"type":"Polygon","coordinates":[[[16.0,45.0],[20.0,45.0],[20.0,47.0],[16.0,47.0],[16.0,45.0]]]}},
-    {"type":"Feature","properties":{"name":"Po planota","info":"Razširjena planota v Italiji.","drzava":"Italija","vrsta":"planota"},"geometry":{"type":"Polygon","coordinates":[[[10.5,45.0],[12.0,45.0],[12.0,45.5],[10.5,45.5],[10.5,45.0]]]}},
-    {"type":"Feature","properties":{"name":"Bohemian Massif","info":"Stare gorovje/planota Češke in Nemčije.","drzava":"Češka,Nemčija","vrsta":"planota"},"geometry":{"type":"Polygon","coordinates":[[[12.5,49.0],[15.0,49.0],[15.0,51.0],[12.5,51.0],[12.5,49.0]]]}},
-
-    /* ------------ JEZERA EVROPE ------------ */
-    {"type":"Feature","properties":{"name":"Balatonsko jezero","info":"Največje jezero v srednji Evropi.","drzava":"Madžarska","vrsta":"jezero"},"geometry":{"type":"Polygon","coordinates":[[[17.7,46.8],[18.1,46.8],[18.1,47.0],[17.7,47.0],[17.7,46.8]]]}},
-    {"type":"Feature","properties":{"name":"Genèvesko jezero","info":"Veliko alpsko jezero na meji Švice in Francije.","drzava":"Švica,Francija","vrsta":"jezero"},"geometry":{"type":"Polygon","coordinates":[[[6.2,46.4],[6.6,46.4],[6.6,46.8],[6.2,46.8],[6.2,46.4]]]}},
-    {"type":"Feature","properties":{"name":"Veško jezero","info":"Veliko jezero v Veliki Britaniji.","drzava":"Velika Britanija","vrsta":"jezero"},"geometry":{"type":"Polygon","coordinates":[[[-3.0,54.3],[-2.7,54.3],[-2.7,54.5],[-3.0,54.5],[-3.0,54.3]]]}},
-
-    /* ------------ VEČJE REKE EVROPE ------------ */
-    {"type":"Feature","properties":{"name":"Volga","info":"Najdaljša reka v Evropi.","drzava":"Rusija","vrsta":"reka"},"geometry":{"type":"LineString","coordinates":[[30,60],[42,54],[48,52],[48,46],[47,45]]}},
-    {"type":"Feature","properties":{"name":"Donava","info":"Druga najdaljša evropska reka.","drzava":"Nemčija,Avstrija,Slovaška,H madžarska,Hrvaška,Srbija,Bolgarija,Rumunija,Moldavija,Ukrajina","vrsta":"reka"},"geometry":{"type":"LineString","coordinates":[[8.5,48.6],[12,48],[15,47],[18,46.5],[21,45.5],[25,44.5]]}},
-    {"type":"Feature","properties":{"name":"Ren","info":"Reka v zahodni Evropi.","drzava":"Švica,Nemčija,Francija,Nizozemska","vrsta":"reka"},"geometry":{"type":"LineString","coordinates":[[8,47.5],[7,49],[6,51],[4,52.5]]}},
-    {"type":"Feature","properties":{"name":"Dneper","info":"Vzhodnoevropska reka.","drzava":"Rusija,Belorusija,Ukrajina","vrsta":"reka"},"geometry":{"type":"LineString","coordinates":[[30,54],[28,51],[27,48],[30,46]]}},
-    {"type":"Feature","properties":{"name":"Visla","info":"Najdaljša reka Poljske.","drzava":"Poljska","vrsta":"reka"},"geometry":{"type":"LineString","coordinates":[[19.5,54],[20,52],[20.5,50],[21,49]]}},
-    {"type":"Feature","properties":{"name":"Seine","info":"Znana reka v Franciji.","drzava":"Francija","vrsta":"reka"},"geometry":{"type":"LineString","coordinates":[[2.5,49.5],[3,48.5],[2.5,47.5],[1.5,48]]}},
-
-    /* ------------ GLAVNA IN VEČJA EVROPSKA MESTA ------------ */
-    {"type":"Feature","properties":{"name":"Moskva","info":"Največje mesto Evrope.","drzava":"Rusija","vrsta":"mesto","glavno_mesto":"da"},"geometry":{"type":"Point","coordinates":[37.62,55.75]}},
-    {"type":"Feature","properties":{"name":"London","info":"Glavno mesto VB.","drzava":"Velika Britanija","vrsta":"mesto","glavno_mesto":"da"},"geometry":{"type":"Point","coordinates":[-0.13,51.50]}},
-    {"type":"Feature","properties":{"name":"Pariz","info":"Glavno mesto Francije.","drzava":"Francija","vrsta":"mesto","glavno_mesto":"da"},"geometry":{"type":"Point","coordinates":[2.35,48.85]}},
-    {"type":"Feature","properties":{"name":"Berlin","info":"Glavno mesto Nemčije.","drzava":"Nemčija","vrsta":"mesto","glavno_mesto":"da"},"geometry":{"type":"Point","coordinates":[13.40,52.52]}},
-    {"type":"Feature","properties":{"name":"Madrid","info":"Glavno mesto Španije.","drzava":"Španija","vrsta":"mesto","glavno_mesto":"da"},"geometry":{"type":"Point","coordinates":[-3.70,40.42]}},
-    {"type":"Feature","properties":{"name":"Rim","info":"Glavno mesto Italije.","drzava":"Italija","vrsta":"mesto","glavno_mesto":"da"},"geometry":{"type":"Point","coordinates":[12.50,41.90]}},
-    {"type":"Feature","properties":{"name":"Atena","info":"Glavno mesto Grčije.","drzava":"Grčija","vrsta":"mesto","glavno_mesto":"da"},"geometry":{"type":"Point","coordinates":[23.72,37.98]}},
-    {"type":"Feature","properties":{"name":"Lisabona","info":"Glavno mesto Portugalske.","drzava":"Portugalska","vrsta":"mesto","glavno_mesto":"da"},"geometry":{"type":"Point","coordinates":[-9.14,38.72]}},
-    {"type":"Feature","properties":{"name":"Dunaj","info":"Glavno mesto Avstrije.","drzava":"Avstrija","vrsta":"mesto","glavno_mesto":"da"},"geometry":{"type":"Point","coordinates":[16.37,48.21]}},
-    {"type":"Feature","properties":{"name":"Budimpešta","info":"Glavno mesto Madžarske.","drzava":"Madžarska","vrsta":"mesto","glavno_mesto":"da"},"geometry":{"type":"Point","coordinates":[19.04,47.50]}},
-    {"type":"Feature","properties":{"name":"Varšava","info":"Glavno mesto Poljske.","drzava":"Poljska","vrsta":"mesto","glavno_mesto":"da"},"geometry":{"type":"Point","coordinates":[21.01,52.23]}},
-    {"type":"Feature","properties":{"name":"Stockholm","info":"Glavno mesto Švedske.","drzava":"Švedska","vrsta":"mesto","glavno_mesto":"da"},"geometry":{"type":"Point","coordinates":[18.06,59.33]}},
-    {"type":"Feature","properties":{"name":"Amsterdam","info":"Glavno mesto Nizozemske.","drzava":"Nizozemska","vrsta":"mesto","glavno_mesto":"da"},"geometry":{"type":"Point","coordinates":[4.90,52.37]}},
-    {"type":"Feature","properties":{"name":"Helsinki","info":"Glavno mesto Finske.","drzava":"Finska","vrsta":"mesto","glavno_mesto":"da"},"geometry":{"type":"Point","coordinates":[24.94,60.17]}},
-    {"type":"Feature","properties":{"name":"Bruselj","info":"Glavno mesto Belgije.","drzava":"Belgija","vrsta":"mesto","glavno_mesto":"da"},"geometry":{"type":"Point","coordinates":[4.35,50.85]}}
+    {
+      "type":"Feature",
+      "properties":{"name":"Alpe","info":"Najvišje gorovje srednje Evrope.","drzava":"Avstrija,Švica,Francija,Italija,Nemčija,Slovenija","vrsta":"gorovje"},
+      "geometry":{"type":"Polygon","coordinates":[[[8.0,45.0],[12.5,45.0],[12.5,48.5],[8.0,48.5],[8.0,45.0]]]}
+    },
+    {
+      "type":"Feature",
+      "properties":{"name":"Karpati","info":"Gorska veriga vzhodne Evrope.","drzava":"Slovaška,Poljska,Rumunija,Ukrajina","vrsta":"gorovje"},
+      "geometry":{"type":"Polygon","coordinates":[[[19.0,47.0],[25.0,47.0],[25.0,50.0],[19.0,50.0],[19.0,47.0]]]}
+    },
+    {
+      "type":"Feature",
+      "properties":{"name":"Skandinavske gore","info":"Gorovje v Norveški in Švedski.","drzava":"Norveška,Švedska","vrsta":"gorovje"},
+      "geometry":{"type":"Polygon","coordinates":[[[5.0,60.0],[20.0,60.0],[20.0,70.0],[5.0,70.0],[5.0,60.0]]]}
+    },
+    {
+      "type":"Feature",
+      "properties":{"name":"Pannonian Basin","info":"Velika nižinska kotlina Srednje Evrope.","drzava":"Madžarska,Slovenija,Slovaška,Avstrija,Romunija,Hrvaška, Srbija","vrsta":"kotlina"},
+      "geometry":{"type":"Polygon","coordinates":[[[16.0,45.0],[20.0,45.0],[20.0,47.0],[16.0,47.0],[16.0,45.0]]]}
+    },
+    {
+      "type":"Feature",
+      "properties":{"name":"Rhein","info":"Najdaljša reka v zahodni Evropi.","drzava":"Švica,Nemčija,Nizozemska","vrsta":"reka"},
+      "geometry":{"type":"LineString","coordinates":[[8.0,47.5],[8.5,48.0],[9.0,49.0],[10.0,50.0],[5.0,51.5]]}
+    },
+    {
+      "type":"Feature",
+      "properties":{"name":"Volga","info":"Najdaljša reka v Evropi.","drzava":"Rusija","vrsta":"reka"},
+      "geometry":{"type":"LineString","coordinates":[[30,60],[42,54],[48,52],[48,46],[47,45]]}
+    },
+    {
+      "type":"Feature",
+      "properties":{"name":"Donava","info":"Druga najdaljša evropska reka.","drzava":"Nemčija,Avstrija,Slovaška,Hrvaška,Srbija,Bolgarija,Rumunija","vrsta":"reka"},
+      "geometry":{"type":"LineString","coordinates":[[12.0,48.0],[16.0,48.0],[19.0,45.0],[21.0,45.0],[23.0,44.0]]}
+    },
+    {
+      "type":"Feature",
+      "properties":{"name":"Pariz","info":"Glavno mesto Francije.","drzava":"Francija","vrsta":"mesto","glavno_mesto":"da"},
+      "geometry":{"type":"Point","coordinates":[2.3522,48.8566]}
+    },
+    {
+      "type":"Feature",
+      "properties":{"name":"London","info":"Glavno mesto Velike Britanije.","drzava":"Velika Britanija","vrsta":"mesto","glavno_mesto":"da"},
+      "geometry":{"type":"Point","coordinates":[-0.1276,51.5074]}
+    },
+    {
+      "type":"Feature",
+      "properties":{"name":"Berlin","info":"Glavno mesto Nemčije.","drzava":"Nemčija","vrsta":"mesto","glavno_mesto":"da"},
+      "geometry":{"type":"Point","coordinates":[13.4050,52.5200]}
+    },
+    {
+      "type":"Feature",
+      "properties":{"name":"Venedig","info":"Večje mesto v Italiji.","drzava":"Italija","vrsta":"mesto","glavno_mesto":"ne"},
+      "geometry":{"type":"Point","coordinates":[12.3155,45.4408]}
+    },
+    {
+      "type":"Feature",
+      "properties":{"name":"Balaton","info":"Največje jezero na Madžarskem.","drzava":"Madžarska","vrsta":"jezero"},
+      "geometry":{"type":"Polygon","coordinates":[[[17.5,46.7],[18.5,46.7],[18.5,46.0],[17.5,46.0],[17.5,46.7]]]}
+    },
+    {
+      "type":"Feature",
+      "properties":{"name":"Ljubljanska kotlina","info":"Kotlina v Sloveniji.","drzava":"Slovenija","vrsta":"kotlina"},
+      "geometry":{"type":"Polygon","coordinates":[[[14.45,46.0],[14.55,46.0],[14.55,46.1],[14.45,46.1],[14.45,46.0]]]}
+    },
+    {
+      "type":"Feature",
+      "properties":{"name":"Danube Delta","info":"Ustje Donave v Črnem morju.","drzava":"Romunija,Ukrajina","vrsta":"dolina"},
+      "geometry":{"type":"Polygon","coordinates":[[[28.5,45.0],[29.5,45.0],[29.5,45.5],[28.5,45.5],[28.5,45.0]]]}
+    }
   ]
 }
