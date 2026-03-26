@@ -78,7 +78,6 @@ let totalDistance = 0;
 let guessLatLng = null;
 let guessMarker = null;
 let bestScore = localStorage.getItem("bestScore");
-let currentDisplayLayer = null;
 let currentLine = null;
 let currentBufferLayer = null;
 let correctLayer = null;
@@ -119,7 +118,6 @@ function confirmGuess(){
   let bufferLayer = null;
 
   if(geometry.type==="Polygon"){
-    // Poligoni: zelen poligon in izračun distance kot prej
     let poly = turf.polygon(geometry.coordinates);
     correctLayer = L.polygon(geometry.coordinates[0].map(c=>[c[1],c[0]]), {color:"green", fillColor:"green", fillOpacity:0.2}).addTo(map);
 
@@ -133,19 +131,26 @@ function confirmGuess(){
     }
 
   } else if(geometry.type==="Point" || geometry.type==="LineString"){
-    // Točke in linije: 50 km buffer
     let geom;
     if(geometry.type==="Point") geom = turf.point(geometry.coordinates);
     else geom = turf.lineString(geometry.coordinates);
 
     let buffer = turf.buffer(geom, 50, {units:"kilometers"});
-    
-    // Prikaži buffer
     let bufferCoords = buffer.geometry.coordinates[0].map(c => [c[1], c[0]]);
     bufferLayer = L.polygon(bufferCoords, {color:"green", fillColor:"green", fillOpacity:0.2}).addTo(map);
 
-    // Prikaz pravilne lokacije: točka/linija
-    if(geometry.type==="Point") correctLayer = L.marker([geometry.coordinates[1], geometry.coordinates[0]], {icon: L.icon({iconUrl:'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png', iconSize:[25,41], iconAnchor:[12,41], shadowUrl:'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png', shadowSize:[41,41], shadowAnchor:[12,41]})}).addTo(map);
+    // Pravilna lokacija
+    if(geometry.type==="Point") correctLayer = L.marker(
+      [geometry.coordinates[1], geometry.coordinates[0]], 
+      {icon: L.icon({
+          iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-green.png',
+          shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+          iconSize: [25, 41],
+          iconAnchor: [12, 41],
+          shadowSize: [41, 41],
+          shadowAnchor: [12, 41]
+      })}
+    ).addTo(map);
     else correctLayer = L.polyline(geometry.coordinates.map(c=>[c[1],c[0]]), {color:"green"}).addTo(map);
 
     if(turf.booleanPointInPolygon(userPoint, buffer)){
@@ -156,7 +161,6 @@ function confirmGuess(){
         nearestCoords = {lat: nearest.geometry.coordinates[1], lng: nearest.geometry.coordinates[0]};
       }
     } else {
-      // Če izven bufferja: merimo do roba bufferja
       let nearestOnBuffer = turf.nearestPointOnLine(turf.polygonToLine(buffer), userPoint, {units:"kilometers"});
       km = Math.round(nearestOnBuffer.properties.dist);
       nearestCoords = {lat: nearestOnBuffer.geometry.coordinates[1], lng: nearestOnBuffer.geometry.coordinates[0]};
@@ -168,7 +172,6 @@ function confirmGuess(){
   document.getElementById("count").textContent = roundCount;
   document.getElementById("total").textContent = totalDistance;
 
-  // Prikaži modro linijo med klikom in najbližjo točko/poligon
   if(guessLatLng && nearestCoords){
     currentLine = L.polyline([guessLatLng, nearestCoords], {color:"blue"}).addTo(map);
   }
@@ -185,7 +188,6 @@ function showModal(feature, km){
 
 function closeModal(){
   document.getElementById("infoModal").style.display = "none";
-  if(currentDisplayLayer){ map.removeLayer(currentDisplayLayer); currentDisplayLayer=null; }
   if(currentLine){ map.removeLayer(currentLine); currentLine=null; }
   if(guessMarker){ map.removeLayer(guessMarker); guessMarker=null; }
   if(currentBufferLayer){ map.removeLayer(currentBufferLayer); currentBufferLayer=null; }
